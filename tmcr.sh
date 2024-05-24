@@ -1,78 +1,107 @@
 #!/bin/bash
 
-# GitHub Personal Access Token (Replace 'YOUR_TOKEN' with your actual token)
-token="${GITHUB_TOKEN}"
+#set -e
 
-# GitHub Organization or User name (Replace 'RafiCisco' with your actual organization or user name)
-org="RafiCisco"
+set -euo pipefail
 
-# Function to create a team if it doesn't exist
+# GitHub Organization name
+ORGANIZATION="RafiCisco"
+
+# GitHub Token with appropriate permissions
+GITHUB_TOKEN="${GITHUB_TOKEN}"
+
+# Variables
+TEAM_NAMES=("admin" "dev")
+TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
+TEAM_PRIVACY="closed"  # or "secret"
+
+# Function to check if a team exists
+team_exists() {
+  local team_name=$1
+
+  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
+
+  local team_id=$(echo "$response" | jq -r ".[] | select(.name == \"$team_name\") | .id")
+
+  if [[ -n "$team_id" ]]; then
+    echo "$team_id"
+  else
+    echo "false"
+  fi
+}
+
+# Function to create a team
 create_team() {
-    local team_name="$1"
-    local team_permission="$2"
+  local team_name=$1
+  local team_description=$2
+  local team_privacy=$3
 
-    # Check if the team already exists
-    team_response=$(curl -X GET -s -H "Authorization: token $token" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/orgs/$org/teams/$team_name")
-    if [[ $(echo "$team_response" | jq -r '.message') == "Not Found" ]]; then
-        # Team doesn't exist, so create it
-        team_response=$(curl -X POST \
-            -H "Authorization: token $token" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/orgs/$org/teams" \
-            -d "{\"name\": \"$team_name\", \"permission\": \"$team_permission\"}")
-        echo "Team '$team_name' created"
-    fi
+  local response=$(curl -s -X POST \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"$team_privacy\"}" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
+
+  local team_id=$(echo "$response" | jq -r '.id')
+  local error_message=$(echo "$response" | jq -r '.message')
+
+  if [[ "$team_id" == "null" ]]; then
+    echo "Error creating team $team_name: $error_message"
+    exit 1
+  else
+    echo "$team_id"
+  fi
 }
 
-# Function to assign team to a repository
-assign_team_to_repo() {
-    local team_name="$1"
-    local repo_name="$2"
+# Function to get team slug from team ID
+get_team_slug() {
+  local team_id=$1
 
-    # Get team ID
-    team_id=$(curl -s -H "Authorization: token $token" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/orgs/$org/teams/$team_name" | jq -r '.id')
+  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
 
-    # Assign team to repository
-    curl -X PUT \
-        -H "Authorization: token $token" \
-        -H "Accept: application/vnd.github.v3+json" \
-        "https://api.github.com/teams/$team_id/repos/$org/$repo_name"
-    echo "Assigned $team_name team to $repo_name"
+  local team_slug=$(echo "$response" | jq -r ".[] | select(.id==$team_id) | .slug")
+
+  if [[ -z "$team_slug" ]]; then
+    echo "Error: Team slug not found for team ID $team_id"
+    exit 1
+  else
+    echo "$team_slug"
+  fi
 }
 
-# Path to JSON file containing repository information
-json_path="repos.json"
+# Function to get team details
+get_team_details() {
+  local team_slug=$1
 
-# Raw URL of the JSON file
-json_url="https://raw.githubusercontent.com/$org/projA/main/$json_path"
+  local response=$(curl -s -X GET \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug")
 
-# Fetch the raw content of the JSON file
-json_content=$(curl -s "$json_url")
+  echo "$response" | jq '.'
+}
 
-# Parse JSON content using jq
-project=$(echo "$json_content" | jq -r '.project')
-repositories=$(echo "$json_content" | jq -c '.repositories[]')
+# Loop through team names and descriptions
+for i in "${!TEAM_NAMES[@]}"; do
+  TEAM_NAME="${TEAM_NAMES[$i]}"
+  TEAM_DESCRIPTION="${TEAM_DESCRIPTIONS[$i]}"
 
-# Create admin team if not exists
-create_team "admin" "admin"
+  # Check if the team already exists
+  TEAM_ID=$(team_exists "$TEAM_NAME")
+  if [[ "$TEAM_ID" != "false" ]]; then
+    echo "Team '$TEAM_NAME' already exists with ID $TEAM_ID."
+    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
+  else
+    # Create the team and get its details
+    TEAM_ID=$(create_team "$TEAM_NAME" "$TEAM_DESCRIPTION" "$TEAM_PRIVACY")
+    echo "Team '$TEAM_NAME' created with ID $TEAM_ID"
 
-# Create dev team if not exists
-create_team "dev" "push"
+    # Fetch the team slug using the team ID
+    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
+  fi
 
-# Assign teams to repositories
-for repo in $(echo "$repositories" | jq -r '.[]'); do
-    repo_name=$(echo "$repo" | jq -r '.name')
-    sub_repositories=$(echo "$repo" | jq -c '.subrepositories[]')
-    
-    # Assign admin team to main repository
-    assign_team_to_repo "admin" "$repo_name"
-
-    # Assign dev team to main repository
-    assign_team_to_repo "dev" "$repo_name"
-
-    # Assign teams to subrepositories
-    for sub_repo in $(echo "$sub_repositories" | jq -r '.[]'); do
-        assign_team_to_repo "admin" "$sub_repo"
-        assign_team_to_repo "dev" "$sub_repo"
-    done
+  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
+  get_team_details "$TEAM_SLUG"
 done
