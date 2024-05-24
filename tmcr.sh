@@ -33,32 +33,17 @@ fi
 
 # Parse JSON content using jq
 project=$(echo "$json_content" | jq -r '.project')
-repositories=$(echo "$json_content" | jq -c '.repositories[]')
+repositories=$(echo "$json_content" | jq -r '.repositories[]')
 
 # Output the parsed data
 echo "Project: $project"
 echo "Repositories:"
-while IFS= read -r repo; do
-    echo "$repo"
-done <<< "$repositories"
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+echo "$repositories"
 
 # Variables
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
+TEAM_PERMISSIONS=("admin" "push")
 TEAM_PRIVACY="closed"  # or "secret"
 
 # Function to check if a team exists
@@ -129,10 +114,30 @@ get_team_details() {
   echo "$response" | jq '.'
 }
 
+# Function to assign a team to a repository
+assign_team_to_repo() {
+  local team_slug=$1
+  local repo_name=$2
+  local permission=$3
+
+  local response=$(curl -s -X PUT \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name" \
+    -d "{\"permission\": \"$permission\"}")
+
+  if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
+    echo "Error assigning team $team_slug to repository $repo_name: $(echo "$response" | jq -r '.message')"
+  else
+    echo "Assigned team $team_slug to repository $repo_name with $permission permission"
+  fi
+}
+
 # Loop through team names and descriptions
 for i in "${!TEAM_NAMES[@]}"; do
   TEAM_NAME="${TEAM_NAMES[$i]}"
   TEAM_DESCRIPTION="${TEAM_DESCRIPTIONS[$i]}"
+  TEAM_PERMISSION="${TEAM_PERMISSIONS[$i]}"
 
   # Check if the team already exists
   TEAM_ID=$(team_exists "$TEAM_NAME")
@@ -150,4 +155,10 @@ for i in "${!TEAM_NAMES[@]}"; do
 
   echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
   get_team_details "$TEAM_SLUG"
+
+  # Assign team to each repository
+  while IFS= read -r repo; do
+    echo "Assigning team '$TEAM_SLUG' to repository '$repo' with '$TEAM_PERMISSION' permission..."
+    assign_team_to_repo "$TEAM_SLUG" "$repo" "$TEAM_PERMISSION"
+  done <<< "$repositories"
 done
