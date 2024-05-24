@@ -8,6 +8,7 @@ ORGANIZATION="RafiCisco"
 # GitHub Token with appropriate permissions
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
+
 # Repository name containing the JSON file
 repo="projA"
 
@@ -37,39 +38,94 @@ repositories=$(echo "$json_content" | jq -r '.repositories[]')
 # Output the parsed data
 echo "Project: $project"
 echo "Repositories:"
-while IFS= read -r repo_name; do
+while IFS= read -r repo; do
+    echo "$repo"
+done <<< "$repositories"
+
+
+
+# Function to create a team
+create_team() {
+  local team_name=$1
+  local team_description=$2
+  local team_privacy=$3
+
+  local response=$(curl -s -X POST \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"$team_privacy\"}" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
+
+  local team_id=$(echo "$response" | jq -r '.id')
+  local error_message=$(echo "$response" | jq -r '.message')
+
+  if [[ "$team_id" == "null" ]]; then
+    echo "Error creating team $team_name: $error_message"
+    exit 1
+  else
+    echo "$team_id"
+  fi
+}
+
+# Function to assign a team to a repository
+assign_team_to_repo() {
+  local team_slug=$1
+  local repo_name=$2
+  local permission=$3
+
+  local response=$(curl -s -X PUT \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    -d "{\"permission\": \"$permission\"}" \
+    "https://api.github.com/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
+
+  if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
+    echo "Error assigning team $team_slug to repository $repo_name: $(echo "$response" | jq -r '.message')"
+  else
+    echo "Assigned team $team_slug to repository $repo_name with $permission permission"
+  fi
+}
+
+# Function to create and assign teams to repositories
+create_and_assign_teams() {
+  local json_content=$1
+
+  # Parse JSON content using jq
+  local project=$(echo "$json_content" | jq -r '.project')
+  local repositories=$(echo "$json_content" | jq -r '.repositories[]')
+
+  # Output the parsed data
+  echo "Project: $project"
+  echo "Repositories:"
+  while IFS= read -r repo_name; do
     echo "$repo_name"
     
-    # Loop through team names and descriptions
-    for i in "${!TEAM_NAMES[@]}"; do
-        TEAM_NAME="${TEAM_NAMES[$i]}"
-        TEAM_DESCRIPTION="${TEAM_DESCRIPTIONS[$i]}"
-        TEAM_PERMISSION="${TEAM_PERMISSIONS[$i]}"
+    # Create admin team if it doesn't exist
+    admin_team_id=$(create_team "admin" "Admin team with full access" "closed")
+    echo "Admin Team ID: $admin_team_id"
 
-        # Check if the team already exists
-        response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/orgs/$ORGANIZATION/teams")
-        team_id=$(echo "$response" | jq -r ".[] | select(.name == \"$TEAM_NAME\") | .id")
+    # Create dev team if it doesn't exist
+    dev_team_id=$(create_team "dev" "Development team with write access" "closed")
+    echo "Dev Team ID: $dev_team_id"
 
-        if [[ -z "$team_id" ]]; then
-            # Team does not exist, create it
-            echo "Creating team '$TEAM_NAME'..."
-            response=$(curl -s -X POST \
-                -H "Authorization: token $GITHUB_TOKEN" \
-                -H "Accept: application/vnd.github.v3+json" \
-                -d "{\"name\": \"$TEAM_NAME\", \"description\": \"$TEAM_DESCRIPTION\"}" \
-                "https://api.github.com/orgs/$ORGANIZATION/teams")
-            team_id=$(echo "$response" | jq -r '.id')
-        else
-            echo "Team '$TEAM_NAME' already exists with ID $team_id."
-        fi
+    # Assign admin team to repository
+    assign_team_to_repo "$admin_team_id" "$repo_name" "admin"
 
-        # Assign team to repository
-        echo "Assigning team '$TEAM_NAME' to repository '$repo_name' with '$TEAM_PERMISSION' permission..."
-        response=$(curl -s -X PUT \
-            -H "Authorization: token $GITHUB_TOKEN" \
-            -H "Accept: application/vnd.github.v3+json" \
-            -d "{\"permission\": \"$TEAM_PERMISSION\"}" \
-            "https://api.github.com/teams/$team_id/repos/$ORGANIZATION/$repo_name")
-    done
-done <<< "$repositories"
+    # Assign dev team to repository
+    assign_team_to_repo "$dev_team_id" "$repo_name" "push"
+
+  done <<< "$repositories"
+}
+
+# Fetch the raw content of the JSON file
+echo "Fetching JSON content from $json_url..."
+json_content=$(curl -s "$json_url")
+
+# Check if the JSON content is empty
+if [ -z "$json_content" ]; then
+    echo "Error: JSON file is empty or not found."
+    exit 1
+fi
+
+# Create and assign teams to repositories
+create_and_assign_teams "$json_content"
