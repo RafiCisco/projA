@@ -17,37 +17,22 @@ org="RafiCisco"
 #json_file="https://github.com/RafiCisco/projA/blob/main/repos.json"
 json_file=repos.json
 
-# Check if JSON file exists
-if [ ! -f "$json_file" ]; then
-    echo "Error: JSON file '$json_file' not found."
+# Fetch the raw content of the JSON file
+json_content=$(curl -s "$json_url")
+
+# Check if the JSON content is empty
+if [ -z "$json_content" ]; then
+    echo "Error: JSON file is empty or not found."
     exit 1
 fi
 
-# Read JSON file
-project=$(jq -r '.project' "$json_file")
-repositories=$(jq -c '.repositories[]' "$json_file")
+# Parse JSON content using jq
+project=$(echo "$json_content" | jq -r '.project')
+repositories=$(echo "$json_content" | jq -c '.repositories[]')
 
-# Create project if not exists
-project_id=$(curl -X GET -s -H "Authorization: token $token" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/orgs/$org/projects" | jq -r --arg project "$project" '.[] | select(.name == $project) | .id')
-if [ -z "$project_id" ]; then
-    project_response=$(curl -X POST \
-        -H "Authorization: token $token" \
-        -H "Accept: application/vnd.github.v3+json" \
-        "https://api.github.com/orgs/$org/projects" \
-        -d "{\"name\": \"$project\", \"body\": \"\", \"auto_init\": false}")
-    project_id=$(echo "$project_response" | jq -r '.id')
-    echo "Project '$project' created with ID: $project_id"
-fi
-
-# Add repositories to project
+# Output the parsed data
+echo "Project: $project"
+echo "Repositories:"
 while IFS= read -r repo; do
-    repo_name=$(echo "$repo" | tr -d '"')  # Remove double quotes from repository name
-
-    # Add repository to project
-    curl -X POST \
-        -H "Authorization: token $token" \
-        -H "Accept: application/vnd.github.v3+json" \
-        "https://api.github.com/projects/$project_id/columns" \
-        -d "{\"name\": \"$repo_name\", \"position\": \"last\"}"
-    echo "Added $repo_name to project '$project'"
+    echo "$repo"
 done <<< "$repositories"
