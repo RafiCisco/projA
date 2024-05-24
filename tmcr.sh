@@ -8,7 +8,7 @@ ORGANIZATION="RafiCisco"
 # GitHub Token with appropriate permissions
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
-# Repository name
+# Repository name containing the JSON file
 repo="projA"
 
 # Branch name
@@ -118,7 +118,7 @@ assign_team_to_repo() {
   local repo_name=$2
   local permission=$3
 
-  local api_url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name"
+  local api_url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo/$repo_name"
 
   echo "API URL: $api_url"
   
@@ -160,7 +160,7 @@ for i in "${!TEAM_NAMES[@]}"; do
 
   # Assign team to each repository
   while IFS= read -r repo; do
-    echo "Assigning team '$TEAM_SLUG' to repository '$repo' with '$TEAM_PERMISSION' permission..."
+    echo "Assigning team '$TEAM_SLUG' to repository '$project/$repo' with '$TEAM_PERMISSION' permission..."
     assign_team_to_repo "$TEAM_SLUG" "$repo" "$TEAM_PERMISSION"
   done <<< "$repositories"
 done
