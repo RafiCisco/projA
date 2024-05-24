@@ -142,3 +142,37 @@ for i in "${!TEAM_NAMES[@]}"; do
   echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
   get_team_details "$TEAM_SLUG"
 done
+
+
+
+
+# Loop through repositories and assign teams
+for repo_name in $repositories; do
+  # Assign admin team to repository
+  echo "Assigning admin team to repository '$repo_name'..."
+  response=$(curl -s -X PUT \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    -d "{\"team_id\": \"$admin_team_id\", \"permission\": \"admin\"}" \
+    "https://api.github.com/repos/$ORGANIZATION/$repo_name/teams/$admin_team_id")
+
+  if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
+    echo "Error assigning admin team to repository '$repo_name': $(echo "$response" | jq -r '.message')"
+  else
+    echo "Admin team assigned to repository '$repo_name' successfully."
+  fi
+
+  # Assign dev team to repository
+  echo "Assigning dev team to repository '$repo_name'..."
+  response=$(curl -s -X PUT \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    -d "{\"team_id\": \"$dev_team_id\", \"permission\": \"push\"}" \
+    "https://api.github.com/repos/$ORGANIZATION/$repo_name/teams/$dev_team_id")
+
+  if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
+    echo "Error assigning dev team to repository '$repo_name': $(echo "$response" | jq -r '.message')"
+  else
+    echo "Dev team assigned to repository '$repo_name' successfully."
+  fi
+done
