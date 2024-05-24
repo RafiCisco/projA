@@ -21,6 +21,7 @@ json_path="repos.json"
 json_url="https://raw.githubusercontent.com/$ORGANIZATION/$repo/$branch/$json_path"
 
 # Fetch the raw content of the JSON file
+echo "Fetching JSON content from $json_url..."
 json_content=$(curl -s "$json_url")
 
 # Check if the JSON content is empty
@@ -36,7 +37,9 @@ repositories=$(echo "$json_content" | jq -r '.repositories[]')
 # Output the parsed data
 echo "Project: $project"
 echo "Repositories:"
-echo "$repositories"
+while IFS= read -r repo; do
+    echo "$repo"
+done <<< "$repositories"
 
 # Variables
 TEAM_NAMES=("admin" "dev")
@@ -118,7 +121,7 @@ assign_team_to_repo() {
   local repo_name=$2
   local permission=$3
 
-  local api_url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo/"
+  local api_url="https://api.github.com/repos/$ORGANIZATION/projA/teams/$team_slug/repos/$ORGANIZATION/projA-$repo_name"
 
   echo "API URL: $api_url"
   
