@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # GitHub Personal Access Token (Replace 'YOUR_TOKEN' with your actual token)
-#token="${GITHUB_TOKEN}"
+token="${GITHUB_TOKEN}"
 
 # GitHub Organization or User name (Replace 'YOUR_ORG' with your actual organization or user name)
 #org="RafiCisco"
