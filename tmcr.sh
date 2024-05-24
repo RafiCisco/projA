@@ -1,21 +1,28 @@
 #!/bin/bash
-# Variables
-#ORG_NAME="RafiCisco"  # Replace with your actual organization name
-#GITHUB_TOKEN="${GITHUB_TOKEN}"  # Replace with your GitHub personal access token
-
 
 # GitHub Personal Access Token (Replace 'YOUR_TOKEN' with your actual token)
-token="${GITHUB_TOKEN}"
+#token="${GITHUB_TOKEN}"
 
 # GitHub Organization or User name (Replace 'YOUR_ORG' with your actual organization or user name)
+#org="RafiCisco"
+
+
+#!/bin/bash
+
+# GitHub Organization or User name
 org="RafiCisco"
 
-# Path to JSON file containing repository information
-# Raw URL of the JSON file
-#json_url="https://raw.githubusercontent.com/$org/$repo/$branch/$json_path"
+# Repository name
+repo="projA"
 
-#json_file="https://github.com/RafiCisco/projA/blob/main/repos.json"
-json_file=repos.json
+# Branch name
+branch="main"
+
+# Path to JSON file in the repository
+json_path="repos.json"
+
+# Raw URL of the JSON file
+json_url="https://raw.githubusercontent.com/$org/$repo/$branch/$json_path"
 
 # Fetch the raw content of the JSON file
 json_content=$(curl -s "$json_url")
