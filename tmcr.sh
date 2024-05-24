@@ -14,7 +14,8 @@ org="RafiCisco"
 # Raw URL of the JSON file
 #json_url="https://raw.githubusercontent.com/$org/$repo/$branch/$json_path"
 
-json_file="https://github.com/RafiCisco/projA/blob/main/repos.json"
+#json_file="https://github.com/RafiCisco/projA/blob/main/repos.json"
+json_file=repos.json
 
 # Check if JSON file exists
 if [ ! -f "$json_file" ]; then
