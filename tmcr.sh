@@ -6,7 +6,6 @@ token="${GITHUB_TOKEN}"
 # GitHub Organization or User name (Replace 'RafiCisco' with your actual organization or user name)
 org="RafiCisco"
 
-
 # Function to create a team if it doesn't exist
 create_team() {
     local team_name="$1"
@@ -41,12 +40,6 @@ assign_team_to_repo() {
     echo "Assigned $team_name team to $repo_name"
 }
 
-# Create admin team if not exists
-create_team "admin" "admin"
-
-# Create dev team if not exists
-create_team "dev" "push"
-
 # Path to JSON file containing repository information
 json_path="repos.json"
 
@@ -57,15 +50,29 @@ json_url="https://raw.githubusercontent.com/$org/projA/main/$json_path"
 json_content=$(curl -s "$json_url")
 
 # Parse JSON content using jq
+project=$(echo "$json_content" | jq -r '.project')
 repositories=$(echo "$json_content" | jq -c '.repositories[]')
 
-# Assign teams to repositories
-while IFS= read -r repo; do
-    repo_name=$(echo "$repo" | tr -d '"')  # Remove double quotes from repository name
+# Create admin team if not exists
+create_team "admin" "admin"
 
-    # Assign admin team to repository
+# Create dev team if not exists
+create_team "dev" "push"
+
+# Assign teams to repositories
+for repo in $(echo "$repositories" | jq -r '.[]'); do
+    repo_name=$(echo "$repo" | jq -r '.name')
+    sub_repositories=$(echo "$repo" | jq -c '.subrepositories[]')
+    
+    # Assign admin team to main repository
     assign_team_to_repo "admin" "$repo_name"
 
-    # Assign dev team to repository
+    # Assign dev team to main repository
     assign_team_to_repo "dev" "$repo_name"
-done <<< "$repositories"
+
+    # Assign teams to subrepositories
+    for sub_repo in $(echo "$sub_repositories" | jq -r '.[]'); do
+        assign_team_to_repo "admin" "$sub_repo"
+        assign_team_to_repo "dev" "$sub_repo"
+    done
+done
