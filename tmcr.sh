@@ -63,26 +63,26 @@ team_exists() {
   fi
 }
 
-# Function to create a team
-create_team() {
-  local team_name=$1
-  local team_description=$2
-  local team_privacy=$3
+# Function to assign a team to a repository
+assign_team_to_repo() {
+  local team_slug=$1
+  local repo_name=$2
+  local permission=$3
 
-  local response=$(curl -s -X POST \
+  local api_url="https://api.github.com/repos/$ORGANIZATION/projA/teams/$team_slug/repos/$ORGANIZATION/projA/$repo_name"
+
+  echo "API URL: $api_url"
+  
+  local response=$(curl -s -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"$team_privacy\"}" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams")
+    -H "Accept: application/vnd.github.v3+json" \
+    "$api_url" \
+    -d "{\"permission\": \"$permission\"}")
 
-  local team_id=$(echo "$response" | jq -r '.id')
-  local error_message=$(echo "$response" | jq -r '.message')
-
-  if [[ "$team_id" == "null" ]]; then
-    echo "Error creating team $team_name: $error_message"
-    exit 1
+  if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
+    echo "Error assigning team $team_slug to repository $repo_name: $(echo "$response" | jq -r '.message')"
   else
-    echo "$team_id"
+    echo "Assigned team $team_slug to repository $repo_name with $permission permission"
   fi
 }
 
