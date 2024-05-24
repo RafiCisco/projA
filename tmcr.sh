@@ -3,19 +3,13 @@
 # GitHub Personal Access Token (Replace 'YOUR_TOKEN' with your actual token)
 token="${GITHUB_TOKEN}"
 
-# GitHub Organization or User name (Replace 'YOUR_ORG' with your actual organization or user name)
-#org="RafiCisco"
-
-
-#!/bin/bash
-
-# GitHub Organization or User name
+# GitHub Organization or User name (Replace 'RafiCisco' with your actual organization or user name)
 org="RafiCisco"
 
-# Repository name
+# Repository name (Replace 'projA' with your actual repository name)
 repo="projA"
 
-# Branch name
+# Branch name (Replace 'main' with your actual branch name)
 branch="main"
 
 # Path to JSON file in the repository
@@ -34,7 +28,6 @@ if [ -z "$json_content" ]; then
 fi
 
 # Parse JSON content using jq
-project=$(echo "$json_content" | jq -r '.project')
 repositories=$(echo "$json_content" | jq -c '.repositories[]')
 
 # Create admin team if not exists
