@@ -118,7 +118,7 @@ assign_team_to_repo() {
   local repo_name=$2
   local permission=$3
 
-  local api_url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo/$repo_name"
+  local api_url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo/"
 
   echo "API URL: $api_url"
   
