@@ -1,4 +1,4 @@
 {
   "project": "projA",
-  "repositories": ["projA-rp1", "projA-rp2"]
+  "repositories": ["rp1", "rp2"]
 }
