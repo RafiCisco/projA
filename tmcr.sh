@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#set -e
-
 set -euo pipefail
 
 # GitHub Organization name
@@ -120,10 +118,14 @@ assign_team_to_repo() {
   local repo_name=$2
   local permission=$3
 
+  local api_url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name"
+
+  echo "API URL: $api_url"
+  
   local response=$(curl -s -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Accept: application/vnd.github.v3+json" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name" \
+    "$api_url" \
     -d "{\"permission\": \"$permission\"}")
 
   if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
