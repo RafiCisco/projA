@@ -47,6 +47,45 @@ create_team() {
   fi
 }
 
+# Function to assign team to repository
+assign_team_to_repo() {
+  local team_slug=$1
+  local repo_name=$2
+
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"permission\": \"push\"}" \
+    "https://api.github.com/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
+
+  if [[ "$response" -ne 204 ]]; then
+    echo "Error assigning team $team_slug to repo $repo_name: HTTP status code $response"
+    exit 1
+  else
+    echo "Team $team_slug assigned to repo $repo_name"
+  fi
+}
+
+# Function to read JSON file and assign teams to repositories
+read_json_and_assign_teams() {
+  local json_file=$1
+
+  # Loop through ProjA and its sub_repos
+  projA_name=$(jq -r '.ProjA.name' "$json_file")
+  sub_repos=$(jq -r '.ProjA.sub_repos | @base64' "$json_file")
+  for repo in $sub_repos; do
+    _jq() {
+      echo "${repo}" | base64 --decode | jq -r ${1}
+    }
+
+    local repo_name=$(_jq '.name')
+
+    # Assign teams to repository
+    assign_team_to_repo "admin" "$repo_name"
+    assign_team_to_repo "dev" "$repo_name"
+  done
+}
+
 # Check if admin team exists
 ADMIN_TEAM_ID=$(team_exists "admin")
 if [[ "$ADMIN_TEAM_ID" == "false" ]]; then
@@ -66,3 +105,6 @@ if [[ "$DEV_TEAM_ID" == "false" ]]; then
 else
   echo "Dev team already exists with ID: $DEV_TEAM_ID"
 fi
+
+# Read JSON file and assign teams to repositories
+read_json_and_assign_teams "repos.json"
