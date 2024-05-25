@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euxo pipefail
+set -euo pipefail
 
 # GitHub Organization name
 ORGANIZATION="RafiCisco"
@@ -17,7 +17,7 @@ team_exists() {
 
   local team_id=$(echo "$response" | jq -r ".[] | select(.name == \"$team_name\") | .id")
 
-  if [[ -n "$team_id" && "$team_id" != "null" ]]; then
+  if [[ -n "$team_id" ]]; then
     echo "$team_id"
   else
     echo "false"
@@ -36,8 +36,6 @@ create_team() {
     -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"$team_privacy\"}" \
     "https://api.github.com/orgs/$ORGANIZATION/teams")
 
-  echo "Create team response: $response"
-
   local team_id=$(echo "$response" | jq -r '.id')
   local error_message=$(echo "$response" | jq -r '.message')
 
@@ -49,44 +47,22 @@ create_team() {
   fi
 }
 
-# Function to get team slug from team ID
-get_team_slug() {
-  local team_id=$1
-
-  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_id")
-
-  echo "Get team slug response: $response"
-
-  local team_slug=$(echo "$response" | jq -r '.slug')
-
-  if [[ -z "$team_slug" || "$team_slug" == "null" ]]; then
-    echo "Error: Team slug not found for team ID $team_id"
-    exit 1
-  else
-    echo "$team_slug"
-  fi
-}
-
 # Function to assign team to repository
 assign_team_to_repo() {
   local team_slug=$1
   local repo_name=$2
-  local permission=$3
 
   local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"permission\": \"$permission\"}" \
+    -d "{\"permission\": \"push\"}" \
     "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
-
-  echo "Assign team to repo response code: $response"
 
   if [[ "$response" -ne 204 ]]; then
     echo "Error assigning team $team_slug to repo $repo_name: HTTP status code $response"
     exit 1
   else
-    echo "Team $team_slug assigned to repo $repo_name with $permission permission"
+    echo "Team $team_slug assigned to repo $repo_name"
   fi
 }
 
@@ -107,9 +83,9 @@ read_json_and_assign_teams() {
     echo "Repository: $repo_name"
     echo "URL: $repo_url"
 
-    # Assign teams to repository with appropriate permissions
-    assign_team_to_repo "$ADMIN_TEAM_SLUG" "$repo_name" "admin"
-    assign_team_to_repo "$DEV_TEAM_SLUG" "$repo_name" "push"
+    # Assign teams to repository
+    assign_team_to_repo "admin" "$repo_name"
+    assign_team_to_repo "dev" "$repo_name"
   done <<< "$sub_repos"
 }
 
@@ -122,8 +98,6 @@ if [[ "$ADMIN_TEAM_ID" == "false" ]]; then
 else
   echo "Admin team already exists with ID: $ADMIN_TEAM_ID"
 fi
-ADMIN_TEAM_SLUG=$(get_team_slug "$ADMIN_TEAM_ID")
-echo "Admin team slug: $ADMIN_TEAM_SLUG"
 
 # Check if dev team exists
 DEV_TEAM_ID=$(team_exists "dev")
@@ -134,8 +108,6 @@ if [[ "$DEV_TEAM_ID" == "false" ]]; then
 else
   echo "Dev team already exists with ID: $DEV_TEAM_ID"
 fi
-DEV_TEAM_SLUG=$(get_team_slug "$DEV_TEAM_ID")
-echo "Dev team slug: $DEV_TEAM_SLUG"
 
 # Read JSON file and assign teams to repositories
 read_json_and_assign_teams "repos.json"
