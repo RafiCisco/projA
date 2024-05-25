@@ -122,8 +122,8 @@ for i in "${!TEAM_NAMES[@]}"; do
   fi
 
 
-  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
-  get_team_details "$TEAM_SLUG"
+  #echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
+  #get_team_details "$TEAM_SLUG"
 
   # Determine the permission level
   if [[ "$TEAM_NAME" == "admin" ]]; then
