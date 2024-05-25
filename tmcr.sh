@@ -117,6 +117,7 @@ else
   echo "Admin team already exists with ID: $ADMIN_TEAM_ID"
 fi
 ADMIN_TEAM_SLUG=$(get_team_slug "$ADMIN_TEAM_ID")
+echo "Admin team slug: $ADMIN_TEAM_SLUG"
 
 # Check if dev team exists
 DEV_TEAM_ID=$(team_exists "dev")
@@ -128,6 +129,7 @@ else
   echo "Dev team already exists with ID: $DEV_TEAM_ID"
 fi
 DEV_TEAM_SLUG=$(get_team_slug "$DEV_TEAM_ID")
+echo "Dev team slug: $DEV_TEAM_SLUG"
 
 # Read JSON file and assign teams to repositories
 read_json_and_assign_teams "repos.json"
