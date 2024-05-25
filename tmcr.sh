@@ -3,71 +3,58 @@
 set -euo pipefail
 
 # GitHub Organization name
-ORGANIZATION="RafiCisco"
+ORG="RafiCisco"
 
 # GitHub Token with appropriate permissions
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
+#!/bin/bash
 
-# Create Admin and Dev Teams
+# Replace these variables with your own values
+REPO="projA"  # Replace with the repo you want to assign these teams to
+ADMIN_TEAM="admin_team"
+DEV_TEAM="dev_team"
+
+# Function to create a team
 create_team() {
-    local team_name=$1
-    local team_description=$2
+    local TEAM_NAME=$1
+    local PERMISSION=$2
 
-    local response=$(curl -s -X POST \
-        -H "Authorization: token $GITHUB_TOKEN" \
-        -H "Accept: application/vnd.github.v3+json" \
-        -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"closed\"}" \
-        "https://api.github.com/orgs/$ORGANIZATION/teams")
-
-    local team_id=$(echo "$response" | jq -r '.id')
-    if [ "$team_id" != "null" ]; then
-        echo "Team '$team_name' created with ID $team_id"
-    else
-        echo "Error creating team '$team_name': $(echo "$response" | jq -r '.message')"
-        exit 1
-    fi
+    # Create the team
+    curl -X POST -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    https://api.github.com/orgs/$ORG/teams \
+    -d "{\"name\":\"$TEAM_NAME\", \"permission\":\"$PERMISSION\"}"
 }
 
-# Assign Team to Repository
-assign_team_to_repo() {
-    local team_id=$1
-    local repo_name=$2
-    local permission=$3
+# Function to add a team to a repository with a specific permission
+add_team_to_repo() {
+    local TEAM_NAME=$1
+    local PERMISSION=$2
 
-    local response=$(curl -s -X PUT \
-        -H "Authorization: token $GITHUB_TOKEN" \
-        -H "Accept: application/vnd.github.v3+json" \
-        -d "{\"permission\": \"$permission\"}" \
-        "https://api.github.com/repos/$ORGANIZATION/$repo_name/teams/$team_id")
+    # Get the team ID
+    TEAM_ID=$(curl -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    https://api.github.com/orgs/$ORG/teams/$TEAM_NAME | jq -r .id)
 
-    if [[ $(echo "$response" | jq -r '.message') != "null" ]]; then
-        echo "Error assigning team to repository: $(echo "$response" | jq -r '.message')"
-        exit 1
-    else
-        echo "Assigned team to repository successfully."
-    fi
+    # Add the team to the repository with the specified permission
+    curl -X PUT -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Accept: application/vnd.github.v3+json" \
+    https://api.github.com/teams/$TEAM_ID/repos/$ORG/$REPO \
+    -d "{\"permission\":\"$PERMISSION\"}"
 }
 
-# Create Admin Team
-create_team "admin" "Admin team with full access"
+# Create admin team
+create_team $ADMIN_TEAM "admin"
 
-# Create Dev Team
-create_team "dev" "Development team with write access"
+# Create dev team
+create_team $DEV_TEAM "push"
 
-# Assign Admin Team to Repositories
-admin_team_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/orgs/$ORGANIZATION/teams/admin" | jq -r '.id')
-repositories=("rp1")  # List of repositories to assign
+# Allow some time for the teams to be created
+sleep 5
 
-for repo_name in "${repositories[@]}"; do
-    assign_team_to_repo "$admin_team_id" "$repo_name" "admin"
-done
+# Add admin team to repository with admin permission
+add_team_to_repo $ADMIN_TEAM "admin"
 
-# Assign Dev Team to Repositories
-dev_team_id=$(curl -s -H "Authorization: token $GITHUB_TOKEN" "https://api.github.com/orgs/$ORGANIZATION/teams/dev" | jq -r '.id')
-
-for repo_name in "${repositories[@]}"; do
-    assign_team_to_repo "$dev_team_id" "$repo_name" "push"
-done
-
-echo "Script completed successfully."
+# Add dev team to repository with write permission
+add_team_to_repo $DEV_TEAM "push"
