@@ -88,7 +88,7 @@ get_team_details() {
 
 
 
-: '
+<<com
 # Function to add repository to a team with specified permission
 add_repo_to_team() {
   local team_slug=$1
@@ -143,4 +143,4 @@ for i in "${!TEAM_NAMES[@]}"; do
     add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
   done
 done
-'
+com
