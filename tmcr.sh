@@ -1,84 +1,159 @@
 #!/bin/bash
 
-# Set your GitHub organization name
+set -euo pipefail
+
+# GitHub Organization name
 ORGANIZATION="RafiCisco"
 
-# Set your GitHub token with appropriate permissions
+# GitHub Token with appropriate permissions
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
-# Specify the main repository name
-MAIN_REPOSITORY="projA"
+# Variables
+TEAM_NAMES=("admin" "dev")
+TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
+TEAM_PRIVACY="closed"  # or "secret"
+REPOSITORIES=("projA")  # Full names of repositories under projA
 
-# Specify the branch name
-BRANCH="brpA"
+# Function to check if a team exists
+team_exists() {
+  local team_name=$1
 
-# Specify the sub-repository name
-SUB_REPOSITORY="rp1"
+  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
 
-# Specify the teams and their corresponding permissions
-declare -A TEAMS=(
-  ["admin"]="admin"
-  ["dev"]="push"
-)
+  local team_id=$(echo "$response" | jq -r ".[] | select(.name == \"$team_name\") | .id")
+
+  if [[ -n "$team_id" ]]; then
+    echo "$team_id"
+  else
+    echo "false"
+  fi
+}
 
 # Function to create a team
 create_team() {
   local team_name=$1
   local team_description=$2
+  local team_privacy=$3
 
-  # Construct the API request URL
-  local url="https://api.github.com/orgs/$ORGANIZATION/teams"
-
-  # Make the API request to create the team
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -X POST \
+  local response=$(curl -s -X POST \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"name\": \"$team_name\", \"description\": \"$team_description\"}" \
-    "$url")
+    -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"$team_privacy\"}" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
 
-  if [[ "$response" -eq 201 ]]; then
-    echo "Successfully created team $team_name."
+  local team_id=$(echo "$response" | jq -r '.id')
+  local error_message=$(echo "$response" | jq -r '.message')
+
+  if [[ "$team_id" == "null" ]]; then
+    echo "Error creating team $team_name: $error_message"
+    exit 1
   else
-    echo "Error: Failed to create team $team_name. HTTP status code: $response"
+    echo "$team_id"
   fi
 }
 
-# Function to add a repository to a team with specified permission
+# Function to get team slug from team ID
+get_team_slug() {
+  local team_id=$1
+
+  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams")
+
+  local team_slug=$(echo "$response" | jq -r ".[] | select(.id==$team_id) | .slug")
+
+  if [[ -z "$team_slug" ]]; then
+    echo "Error: Team slug not found for team ID $team_id"
+    exit 1
+  else
+    echo "$team_slug"
+  fi
+}
+
+# Function to get team details
+get_team_details() {
+  local team_slug=$1
+
+  local response=$(curl -s -X GET \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug")
+
+  echo "$response" | jq '.'
+}
+
+# Function to add repository to a team with specified permission
 add_repo_to_team() {
   local team_slug=$1
-  local permission=$2
+  local repo_name=$2
+  local permission=$3
 
-  # Construct the API request URL
-  local url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$MAIN_REPOSITORY/$SUB_REPOSITORY"
-
-  # Make the API request to add the repository to the team
   local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"$permission\"}" \
-    "$url")
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$repo_name")
 
-  if [[ "$response" -eq 204 ]]; then
-    echo "Successfully added $SUB_REPOSITORY to team $team_slug with $permission permission."
+  if [[ "$response" -ne 204 ]]; then
+    echo "Error adding repo $repo_name to team $team_slug: HTTP status code $response"
+    exit 1
   else
-    echo "Error: Failed to add $SUB_REPOSITORY to team $team_slug. HTTP status code: $response"
+    echo "Repo $repo_name added to team $team_slug with $permission permission"
   fi
 }
 
-# Loop through each team
-for team_name in "${!TEAMS[@]}"; do
-  # Create the team if it doesn't exist
-  create_team "$team_name" "${TEAMS[$team_name]} team"
+# Function to check if a repository exists
+repo_exists() {
+  local repo_name=$1
 
-  # Get the team slug using the team name
-  team_slug=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams" | \
-    jq -r ".[] | select(.name == \"$team_name\") | .slug")
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/repos/$repo_name")
 
-  if [[ -n "$team_slug" ]]; then
-    # Add the sub-repository to the team with the specified permission
-    add_repo_to_team "$team_slug" "${TEAMS[$team_name]}"
+  if [[ "$response" -eq 200 ]]; then
+    echo "true"
   else
-    echo "Error: Team $team_name not found."
+    echo "false"
   fi
+}
+
+# Loop through team names and descriptions
+for i in "${!TEAM_NAMES[@]}"; do
+  TEAM_NAME="${TEAM_NAMES[$i]}"
+  TEAM_DESCRIPTION="${TEAM_DESCRIPTIONS[$i]}"
+
+  # Check if the team already exists
+  TEAM_ID=$(team_exists "$TEAM_NAME")
+  if [[ "$TEAM_ID" != "false" ]]; then
+    echo "Team '$TEAM_NAME' already exists with ID $TEAM_ID."
+    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
+  else
+    # Create the team and get its details
+    TEAM_ID=$(create_team "$TEAM_NAME" "$TEAM_DESCRIPTION" "$TEAM_PRIVACY")
+    echo "Team '$TEAM_NAME' created with ID $TEAM_ID"
+
+    # Fetch the team slug using the team ID
+    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
+  fi
+
+  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
+  get_team_details "$TEAM_SLUG"
+
+  # Determine the permission level
+  if [[ "$TEAM_NAME" == "admin" ]]; then
+    PERMISSION="admin"
+  else
+    PERMISSION="push"
+  fi
+
+  # Loop through repositories and add them to the team with the appropriate permission
+  for REPO in "${REPOSITORIES[@]}"; do
+    FULL_REPO_NAME="$ORGANIZATION/$REPO"
+    echo "Checking if repository $FULL_REPO_NAME exists..."
+    if [[ $(repo_exists "$FULL_REPO_NAME") == "true" ]]; then
+      add_repo_to_team "$TEAM_SLUG" "$FULL_REPO_NAME" "$PERMISSION"
+    else
+      echo "Repository $FULL_REPO_NAME does not exist."
+      exit 1
+    fi
+  done
 done
