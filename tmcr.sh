@@ -12,7 +12,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-REPOSITORIES=("projA/rp1" "projA/rp2")  # Full names of repositories under projA
+REPOSITORIES=("projA")  # Full names of repositories under projA
 
 # Function to check if a team exists
 team_exists() {
