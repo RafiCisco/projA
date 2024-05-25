@@ -83,9 +83,9 @@ read_json_and_assign_teams() {
     echo "Repository: $repo_name"
     echo "URL: $repo_url"
 
-    # Assign teams to repository
-    assign_team_to_repo "admin" "$repo_name"
-    assign_team_to_repo "dev" "$repo_name"
+   # Assign teams to repository
+    assign_team_to_repo "admin" "$repo_name" "admin"
+    assign_team_to_repo "dev" "$repo_name" "push"
   done <<< "$sub_repos"
 }
 
