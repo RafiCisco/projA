@@ -56,7 +56,7 @@ assign_team_to_repo() {
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"push\"}" \
-    "https://api.github.com/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
 
   if [[ "$response" -ne 204 ]]; then
     echo "Error assigning team $team_slug to repo $repo_name: HTTP status code $response"
@@ -70,21 +70,23 @@ assign_team_to_repo() {
 read_json_and_assign_teams() {
   local json_file=$1
 
-  # Loop through each project in the JSON file
-  jq -r 'keys[] as $key | "\($key)", "\(.[$key].name)", (.[$key].sub_repos[]) | "\(.name)", "\(.url)"' "$json_file" |
-  while read -r project_name; do
-    read -r project_repo
-    read -r repo_name
-    read -r repo_url
+  # Extract project name and sub-repositories
+  project_name=$(jq -r '.ProjA.name' "$json_file")
+  sub_repos=$(jq -c '.ProjA.sub_repos[]' "$json_file")
 
-    echo "Project: $project_name"
+  echo "Project: $project_name"
+
+  while IFS= read -r sub_repo; do
+    repo_name=$(echo "$sub_repo" | jq -r '.name')
+    repo_url=$(echo "$sub_repo" | jq -r '.url')
+
     echo "Repository: $repo_name"
     echo "URL: $repo_url"
 
     # Assign teams to repository
     assign_team_to_repo "admin" "$repo_name"
     assign_team_to_repo "dev" "$repo_name"
-  done
+  done <<< "$sub_repos"
 }
 
 # Check if admin team exists
