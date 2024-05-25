@@ -6,11 +6,12 @@ TOKEN="${GITHUB_TOKEN}"
 # Organization name
 ORG_NAME="RafiCisco"
 
+
 # Function to create a team
 create_team() {
-    team_name=$1
-    team_desc=$2
-    team_permission=$3
+    local team_name=$1
+    local team_desc=$2
+    local team_permission=$3
 
     # Create the team
     response=$(curl -X POST \
@@ -20,16 +21,21 @@ create_team() {
         -d "{\"name\":\"$team_name\",\"description\":\"$team_desc\",\"permission\":\"$team_permission\"}" \
         -s)
 
-    # Parse the response and extract team details
-    team_name=$(echo "$response" | jq -r '.name')
-    team_id=$(echo "$response" | jq -r '.id')
-    team_desc=$(echo "$response" | jq -r '.description')
+    # Check if response contains errors
+    if [[ $(echo "$response" | jq -r '.errors') != "null" ]]; then
+        echo "Failed to create team. Error response:"
+        echo "$response"
+    else
+        # Parse the response and extract team details
+        team_name=$(echo "$response" | jq -r '.name')
+        team_id=$(echo "$response" | jq -r '.id')
+        team_desc=$(echo "$response" | jq -r '.description')
 
-    # Output team details
-    echo "Team Name: $team_name"
-    echo "Team ID: $team_id"
-    echo "Description: $team_desc"
-    echo
+        # Output team details
+        echo "Team Name: $team_name"
+        echo "Team ID: $team_id"
+        echo "Description: $team_desc"
+    fi
 }
 
 # Main script
