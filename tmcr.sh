@@ -11,7 +11,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 #!/bin/bash
 
 # Replace these variables with your own values
-REPO="projA"  # Replace with the repo you want to assign these teams to
+REPO="rp1"  # Replace with the repo you want to assign these teams to
 ADMIN_TEAM="admin_team"
 DEV_TEAM="dev_team"
 
