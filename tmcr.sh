@@ -51,18 +51,19 @@ create_team() {
 assign_team_to_repo() {
   local team_slug=$1
   local repo_name=$2
+  local permission=$3
 
   local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"permission\": \"push\"}" \
+    -d "{\"permission\": \"$permission\"}" \
     "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
 
   if [[ "$response" -ne 204 ]]; then
     echo "Error assigning team $team_slug to repo $repo_name: HTTP status code $response"
     exit 1
   else
-    echo "Team $team_slug assigned to repo $repo_name"
+    echo "Team $team_slug assigned to repo $repo_name with $permission permission"
   fi
 }
 
@@ -83,9 +84,9 @@ read_json_and_assign_teams() {
     echo "Repository: $repo_name"
     echo "URL: $repo_url"
 
-    # Assign teams to repository
-    assign_team_to_repo "admin" "$repo_name"
-    assign_team_to_repo "dev" "$repo_name"
+    # Assign teams to repository with appropriate permissions
+    assign_team_to_repo "admin" "$repo_name" "admin"
+    assign_team_to_repo "dev" "$repo_name" "write"
   done <<< "$sub_repos"
 }
 
