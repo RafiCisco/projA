@@ -14,6 +14,8 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
+REPOSITORIES=("rp1" "rp2")  # Add your repository names here
+
 
 # Function to check if a team exists
 team_exists() {
@@ -83,6 +85,28 @@ get_team_details() {
   echo "$response" | jq '.'
 }
 
+# Function to add repository to a team with specified permission
+add_repo_to_team() {
+  local team_slug=$1
+  local repo_name=$2
+  local permission=$3
+
+  local response=$(curl -s -X PUT \
+    -H "Authorization: token $GITHUB_TOKEN" \
+    -H "Content-Type: application/json" \
+    -d "{\"permission\": \"$permission\"}" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
+
+  local error_message=$(echo "$response" | jq -r '.message')
+
+  if [[ "$error_message" != "null" ]]; then
+    echo "Error adding repo $repo_name to team $team_slug: $error_message"
+    exit 1
+  else
+    echo "Repo $repo_name added to team $team_slug with $permission permission"
+  fi
+}
+
 # Loop through team names and descriptions
 for i in "${!TEAM_NAMES[@]}"; do
   TEAM_NAME="${TEAM_NAMES[$i]}"
@@ -104,4 +128,16 @@ for i in "${!TEAM_NAMES[@]}"; do
 
   echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
   get_team_details "$TEAM_SLUG"
+
+  # Determine the permission level
+  if [[ "$TEAM_NAME" == "admin" ]]; then
+    PERMISSION="admin"
+  else
+    PERMISSION="push"
+  fi
+
+  # Loop through repositories and add them to the team with the appropriate permission
+  for REPO in "${REPOSITORIES[@]}"; do
+    add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
+  done
 done
