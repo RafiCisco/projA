@@ -135,8 +135,8 @@ for i in "${!TEAM_NAMES[@]}"; do
     TEAM_SLUG=$(get_team_slug "$TEAM_ID")
   fi
 
-  #echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
-  #get_team_details "$TEAM_SLUG"
+  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
+  get_team_details "$TEAM_SLUG"
 
   # Determine the permission level
   if [[ "$TEAM_NAME" == "admin" ]]; then
@@ -147,10 +147,12 @@ for i in "${!TEAM_NAMES[@]}"; do
 
   # Loop through repositories and add them to the team with the appropriate permission
   for REPO in "${REPOSITORIES[@]}"; do
-    if [[ $(repo_exists "$REPO") == "true" ]]; then
-      add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
+    FULL_REPO_NAME="$ORGANIZATION/$REPO"
+    echo "Checking if repository $FULL_REPO_NAME exists..."
+    if [[ $(repo_exists "$FULL_REPO_NAME") == "true" ]]; then
+      add_repo_to_team "$TEAM_SLUG" "$FULL_REPO_NAME" "$PERMISSION"
     else
-      echo "Repository $REPO does not exist."
+      echo "Repository $FULL_REPO_NAME does not exist."
       exit 1
     fi
   done
