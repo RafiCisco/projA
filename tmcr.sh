@@ -70,15 +70,21 @@ assign_team_to_repo() {
 read_json_and_assign_teams() {
   local json_file=$1
 
-  # Loop through ProjA and its sub_repos
-  projA_name=$(jq -r '.ProjA.name' "$json_file")
-  sub_repos=$(jq -c '.ProjA.sub_repos[]' "$json_file")
-  while IFS= read -r sub_repo; do
-    repo_name=$(echo "$sub_repo" | jq -r '.name')
+  # Loop through each project in the JSON file
+  jq -r 'keys[] as $key | "\($key)", "\(.[$key].name)", (.[$key].sub_repos[]) | "\(.name)", "\(.url)"' "$json_file" |
+  while read -r project_name; do
+    read -r project_repo
+    read -r repo_name
+    read -r repo_url
+
+    echo "Project: $project_name"
+    echo "Repository: $repo_name"
+    echo "URL: $repo_url"
+
     # Assign teams to repository
     assign_team_to_repo "admin" "$repo_name"
     assign_team_to_repo "dev" "$repo_name"
-  done <<< "$sub_repos"
+  done
 }
 
 # Check if admin team exists
