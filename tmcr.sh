@@ -8,12 +8,6 @@ ORGANIZATION="RafiCisco"
 # GitHub Token with appropriate permissions
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
-# Variables
-TEAM_NAMES=("admin" "dev")
-TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
-TEAM_PRIVACY="closed"  # or "secret"
-REPOSITORIES=("projA")  # Full names of repositories under projA
-
 # Function to check if a team exists
 team_exists() {
   local team_name=$1
@@ -53,107 +47,22 @@ create_team() {
   fi
 }
 
-# Function to get team slug from team ID
-get_team_slug() {
-  local team_id=$1
+# Check if admin team exists
+ADMIN_TEAM_ID=$(team_exists "admin")
+if [[ "$ADMIN_TEAM_ID" == "false" ]]; then
+  echo "Admin team does not exist. Creating..."
+  ADMIN_TEAM_ID=$(create_team "admin" "Admin team with full access" "closed")
+  echo "Admin team created with ID: $ADMIN_TEAM_ID"
+else
+  echo "Admin team already exists with ID: $ADMIN_TEAM_ID"
+fi
 
-  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams")
-
-  local team_slug=$(echo "$response" | jq -r ".[] | select(.id==$team_id) | .slug")
-
-  if [[ -z "$team_slug" ]]; then
-    echo "Error: Team slug not found for team ID $team_id"
-    exit 1
-  else
-    echo "$team_slug"
-  fi
-}
-
-# Function to get team details
-get_team_details() {
-  local team_slug=$1
-
-  local response=$(curl -s -X GET \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    -H "Content-Type: application/json" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug")
-
-  echo "$response" | jq '.'
-}
-
-# Function to add repository to a team with specified permission
-add_repo_to_team() {
-  local team_slug=$1
-  local repo_name=$2
-  local permission=$3
-
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d "{\"permission\": \"$permission\"}" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$repo_name")
-
-  if [[ "$response" -ne 204 ]]; then
-    echo "Error adding repo $repo_name to team $team_slug: HTTP status code $response"
-    exit 1
-  else
-    echo "Repo $repo_name added to team $team_slug with $permission permission"
-  fi
-}
-
-# Function to check if a repository exists
-repo_exists() {
-  local repo_name=$1
-
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$repo_name")
-
-  if [[ "$response" -eq 200 ]]; then
-    echo "true"
-  else
-    echo "false"
-  fi
-}
-
-# Loop through team names and descriptions
-for i in "${!TEAM_NAMES[@]}"; do
-  TEAM_NAME="${TEAM_NAMES[$i]}"
-  TEAM_DESCRIPTION="${TEAM_DESCRIPTIONS[$i]}"
-
-  # Check if the team already exists
-  TEAM_ID=$(team_exists "$TEAM_NAME")
-  if [[ "$TEAM_ID" != "false" ]]; then
-    echo "Team '$TEAM_NAME' already exists with ID $TEAM_ID."
-    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
-  else
-    # Create the team and get its details
-    TEAM_ID=$(create_team "$TEAM_NAME" "$TEAM_DESCRIPTION" "$TEAM_PRIVACY")
-    echo "Team '$TEAM_NAME' created with ID $TEAM_ID"
-
-    # Fetch the team slug using the team ID
-    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
-  fi
-
-  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
-  get_team_details "$TEAM_SLUG"
-
-  # Determine the permission level
-  if [[ "$TEAM_NAME" == "admin" ]]; then
-    PERMISSION="admin"
-  else
-    PERMISSION="push"
-  fi
-
-  # Loop through repositories and add them to the team with the appropriate permission
-  for REPO in "${REPOSITORIES[@]}"; do
-    FULL_REPO_NAME="$ORGANIZATION/$REPO"
-    echo "Checking if repository $FULL_REPO_NAME exists..."
-    if [[ $(repo_exists "$FULL_REPO_NAME") == "true" ]]; then
-      add_repo_to_team "$TEAM_SLUG" "$FULL_REPO_NAME" "$PERMISSION"
-    else
-      echo "Repository $FULL_REPO_NAME does not exist."
-      exit 1
-    fi
-  done
-done
+# Check if dev team exists
+DEV_TEAM_ID=$(team_exists "dev")
+if [[ "$DEV_TEAM_ID" == "false" ]]; then
+  echo "Dev team does not exist. Creating..."
+  DEV_TEAM_ID=$(create_team "dev" "Development team with write access" "closed")
+  echo "Dev team created with ID: $DEV_TEAM_ID"
+else
+  echo "Dev team already exists with ID: $DEV_TEAM_ID"
+fi
