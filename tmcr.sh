@@ -12,8 +12,8 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-REPOSITORIES=("repo1" "repo2")  # Add your repository names here
-
+#REPOSITORIES=("rp1" "rp2")  # Add your repository names here
+REPOSITORIES=("rp1")
 # Function to check if a team exists
 team_exists() {
   local team_name=$1
