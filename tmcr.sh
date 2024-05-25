@@ -12,7 +12,8 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-REPOSITORIES=("projA")  # Full names of repositories under projA
+REPOSITORY="projA"  # Only specify the repository name here
+BRANCH="brpA"  # Specify the branch name here
 
 # Function to check if a team exists
 team_exists() {
@@ -70,49 +71,22 @@ get_team_slug() {
   fi
 }
 
-# Function to get team details
-get_team_details() {
-  local team_slug=$1
-
-  local response=$(curl -s -X GET \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    -H "Content-Type: application/json" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug")
-
-  echo "$response" | jq '.'
-}
-
 # Function to add repository to a team with specified permission
 add_repo_to_team() {
   local team_slug=$1
-  local repo_name=$2
-  local permission=$3
+  local permission=$2
 
   local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"$permission\"}" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$repo_name")
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$REPOSITORY")
 
   if [[ "$response" -ne 204 ]]; then
-    echo "Error adding repo $repo_name to team $team_slug: HTTP status code $response"
+    echo "Error adding repo $REPOSITORY to team $team_slug: HTTP status code $response"
     exit 1
   else
-    echo "Repo $repo_name added to team $team_slug with $permission permission"
-  fi
-}
-
-# Function to check if a repository exists
-repo_exists() {
-  local repo_name=$1
-
-  local response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$repo_name")
-
-  if [[ "$response" -eq 200 ]]; then
-    echo "true"
-  else
-    echo "false"
+    echo "Repo $REPOSITORY added to team $team_slug with $permission permission"
   fi
 }
 
@@ -135,8 +109,8 @@ for i in "${!TEAM_NAMES[@]}"; do
     TEAM_SLUG=$(get_team_slug "$TEAM_ID")
   fi
 
-  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
-  get_team_details "$TEAM_SLUG"
+  #echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
+  #get_team_details "$TEAM_SLUG"
 
   # Determine the permission level
   if [[ "$TEAM_NAME" == "admin" ]]; then
@@ -145,15 +119,6 @@ for i in "${!TEAM_NAMES[@]}"; do
     PERMISSION="push"
   fi
 
-  # Loop through repositories and add them to the team with the appropriate permission
-  for REPO in "${REPOSITORIES[@]}"; do
-    FULL_REPO_NAME="$ORGANIZATION/$REPO"
-    echo "Checking if repository $FULL_REPO_NAME exists..."
-    if [[ $(repo_exists "$FULL_REPO_NAME") == "true" ]]; then
-      add_repo_to_team "$TEAM_SLUG" "$FULL_REPO_NAME" "$PERMISSION"
-    else
-      echo "Repository $FULL_REPO_NAME does not exist."
-      exit 1
-    fi
-  done
+  # Add the repository to the team with the appropriate permission
+  add_repo_to_team "$TEAM_SLUG" "$PERMISSION"
 done
