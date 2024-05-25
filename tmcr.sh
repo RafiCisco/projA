@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -euo pipefail
+set -euxo pipefail
 
 # GitHub Organization name
 ORGANIZATION="RafiCisco"
@@ -36,6 +36,8 @@ create_team() {
     -d "{\"name\": \"$team_name\", \"description\": \"$team_description\", \"privacy\": \"$team_privacy\"}" \
     "https://api.github.com/orgs/$ORGANIZATION/teams")
 
+  echo "Create team response: $response"
+
   local team_id=$(echo "$response" | jq -r '.id')
   local error_message=$(echo "$response" | jq -r '.message')
 
@@ -53,6 +55,8 @@ get_team_slug() {
 
   local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
     "https://api.github.com/orgs/$ORGANIZATION/teams/$team_id")
+
+  echo "Get team slug response: $response"
 
   local team_slug=$(echo "$response" | jq -r '.slug')
 
@@ -75,6 +79,8 @@ assign_team_to_repo() {
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"$permission\"}" \
     "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
+
+  echo "Assign team to repo response code: $response"
 
   if [[ "$response" -ne 204 ]]; then
     echo "Error assigning team $team_slug to repo $repo_name: HTTP status code $response"
