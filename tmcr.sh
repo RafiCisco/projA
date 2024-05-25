@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#set -e
-
 set -euo pipefail
 
 # GitHub Organization name
@@ -14,8 +12,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-#REPOSITORIES=("rp1" "rp2")  # Add your repository names here
-REPOSITORIES=("rp1")
+REPOSITORIES=("repo1" "repo2")  # Add your repository names here
 
 # Function to check if a team exists
 team_exists() {
@@ -91,16 +88,14 @@ add_repo_to_team() {
   local repo_name=$2
   local permission=$3
 
-  local response=$(curl -s -X PUT \
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"$permission\"}" \
     "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
 
-  local error_message=$(echo "$response" | jq -r '.message')
-
-  if [[ "$error_message" != "null" ]]; then
-    echo "Error adding repo $repo_name to team $team_slug: $error_message"
+  if [[ "$response" -ne 204 ]]; then
+    echo "Error adding repo $repo_name to team $team_slug: HTTP status code $response"
     exit 1
   else
     echo "Repo $repo_name added to team $team_slug with $permission permission"
