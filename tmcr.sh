@@ -102,6 +102,20 @@ add_repo_to_team() {
   fi
 }
 
+# Function to check if a repository exists
+repo_exists() {
+  local repo_name=$1
+
+  local response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
+    "https://api.github.com/repos/$repo_name")
+
+  if [[ "$response" -eq 200 ]]; then
+    echo "true"
+  else
+    echo "false"
+  fi
+}
+
 # Loop through team names and descriptions
 for i in "${!TEAM_NAMES[@]}"; do
   TEAM_NAME="${TEAM_NAMES[$i]}"
@@ -133,6 +147,11 @@ for i in "${!TEAM_NAMES[@]}"; do
 
   # Loop through repositories and add them to the team with the appropriate permission
   for REPO in "${REPOSITORIES[@]}"; do
-    add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
+    if [[ $(repo_exists "$REPO") == "true" ]]; then
+      add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
+    else
+      echo "Repository $REPO does not exist."
+      exit 1
+    fi
   done
 done
