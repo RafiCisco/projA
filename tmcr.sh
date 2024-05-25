@@ -12,8 +12,8 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-BRANCH="brpA"  # Specify the branch
-REPOSITORIES=("projA/rp1" "projA/rp2")  # Full names of repositories under projA
+MAIN_REPOSITORY="projA"  # Main repository name
+SUB_DIRECTORIES=("rp1" "rp2")  # Subdirectories within the main repository
 
 # Function to check if a team exists
 team_exists() {
@@ -54,23 +54,6 @@ create_team() {
   fi
 }
 
-# Function to get team slug from team ID
-get_team_slug() {
-  local team_id=$1
-
-  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams")
-
-  local team_slug=$(echo "$response" | jq -r ".[] | select(.id==$team_id) | .slug")
-
-  if [[ -z "$team_slug" ]]; then
-    echo "Error: Team slug not found for team ID $team_id"
-    exit 1
-  else
-    echo "$team_slug"
-  fi
-}
-
 # Function to add repository to a team with specified permission
 add_repo_to_team() {
   local team_slug=$1
@@ -81,7 +64,7 @@ add_repo_to_team() {
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"$permission\"}" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$repo_name")
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
 
   if [[ "$response" -ne 204 ]]; then
     echo "Error adding repo $repo_name to team $team_slug: HTTP status code $response"
@@ -96,7 +79,7 @@ repo_exists() {
   local repo_name=$1
 
   local response=$(curl -s -o /dev/null -w "%{http_code}" -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$repo_name")
+    "https://api.github.com/repos/$ORGANIZATION/$repo_name")
 
   if [[ "$response" -eq 200 ]]; then
     echo "true"
@@ -105,40 +88,21 @@ repo_exists() {
   fi
 }
 
-# Loop through team names and descriptions
-for i in "${!TEAM_NAMES[@]}"; do
-  TEAM_NAME="${TEAM_NAMES[$i]}"
-  TEAM_DESCRIPTION="${TEAM_DESCRIPTIONS[$i]}"
-
-  # Check if the team already exists
-  TEAM_ID=$(team_exists "$TEAM_NAME")
-  if [[ "$TEAM_ID" != "false" ]]; then
-    echo "Team '$TEAM_NAME' already exists with ID $TEAM_ID."
-    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
-  else
-    # Create the team and get its details
-    TEAM_ID=$(create_team "$TEAM_NAME" "$TEAM_DESCRIPTION" "$TEAM_PRIVACY")
-    echo "Team '$TEAM_NAME' created with ID $TEAM_ID"
-
-    # Fetch the team slug using the team ID
-    TEAM_SLUG=$(get_team_slug "$TEAM_ID")
+# Loop through team names and create teams if they don't exist
+for team_name in "${TEAM_NAMES[@]}"; do
+  if [[ $(team_exists "$team_name") == "false" ]]; then
+    create_team "$team_name" "${TEAM_DESCRIPTIONS[$i]}" "$TEAM_PRIVACY"
   fi
+done
 
-  # Determine the permission level
-  if [[ "$TEAM_NAME" == "admin" ]]; then
-    PERMISSION="admin"
-  else
-    PERMISSION="push"
-  fi
-
-  # Loop through repositories and add them to the team with the appropriate permission
-  for REPO in "${REPOSITORIES[@]}"; do
-    echo "Checking if repository $REPO exists..."
-    if [[ $(repo_exists "$REPO") == "true" ]]; then
-      add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
+# Loop through subdirectories and add them to the appropriate teams
+for sub_directory in "${SUB_DIRECTORIES[@]}"; do
+  for team_name in "${TEAM_NAMES[@]}"; do
+    if [[ $(repo_exists "$MAIN_REPOSITORY/$sub_directory") == "true" ]]; then
+      team_id=$(team_exists "$team_name")
+      add_repo_to_team "$team_id" "$MAIN_REPOSITORY/$sub_directory" "admin"
     else
-      echo "Repository $REPO does not exist."
-      exit 1
+      echo "Repository $MAIN_REPOSITORY/$sub_directory does not exist."
     fi
   done
 done
