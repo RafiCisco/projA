@@ -77,11 +77,15 @@ add_repo_to_team() {
   local team_slug=$1
   local permission=$2
 
+  local url="https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$MAIN_REPOSITORY/$SUB_REPOSITORY"
+
+  echo "Adding repository to team: $url"
+
   local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
     -d "{\"permission\": \"$permission\"}" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$MAIN_REPOSITORY/$SUB_REPOSITORY")
+    "$url")
 
   if [[ "$response" -ne 204 ]]; then
     echo "Error adding repo $SUB_REPOSITORY to team $team_slug: HTTP status code $response"
@@ -90,6 +94,7 @@ add_repo_to_team() {
     echo "Repo $SUB_REPOSITORY added to team $team_slug with $permission permission"
   fi
 }
+
 
 # Loop through team names and descriptions
 for i in "${!TEAM_NAMES[@]}"; do
