@@ -1,4 +1,17 @@
 {
-  "project": "projA",
-  "repositories": ["rp1", "rp2"]
+  "ProjA": {
+    "name": "ProjA",
+    "sub_repos": [
+      {
+        "name": "rp1",
+        "description": "Sub-repo rp1 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpA/rp1"
+      },
+      {
+        "name": "rp2",
+        "description": "Sub-repo RP2 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpA/rp2"
+      }
+    ]
+  }
 }
