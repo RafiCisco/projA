@@ -122,7 +122,6 @@ for i in "${!TEAM_NAMES[@]}"; do
   fi
 
 
- : ' # details to display the details of the teams  (multiple line comment starts with : '         ')
   echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
   get_team_details "$TEAM_SLUG"
 
@@ -132,7 +131,7 @@ for i in "${!TEAM_NAMES[@]}"; do
   else
     PERMISSION="push"
   fi
-  '
+  
 
  
   # Loop through repositories and add them to the team with the appropriate permission
