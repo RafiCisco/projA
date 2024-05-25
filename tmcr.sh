@@ -12,7 +12,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-REPOSITORIES=("projA")  # Full names of repositories under projA
+REPOSITORIES=("projA/rp1" "projA/rp2")  # Full names of repositories under projA
 
 # Function to check if a team exists
 team_exists() {
@@ -70,18 +70,6 @@ get_team_slug() {
   fi
 }
 
-# Function to get team details
-get_team_details() {
-  local team_slug=$1
-
-  local response=$(curl -s -X GET \
-    -H "Authorization: token $GITHUB_TOKEN" \
-    -H "Content-Type: application/json" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug")
-
-  echo "$response" | jq '.'
-}
-
 # Function to add repository to a team with specified permission
 add_repo_to_team() {
   local team_slug=$1
@@ -135,9 +123,6 @@ for i in "${!TEAM_NAMES[@]}"; do
     TEAM_SLUG=$(get_team_slug "$TEAM_ID")
   fi
 
-  #echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
-  #get_team_details "$TEAM_SLUG"
-
   # Determine the permission level
   if [[ "$TEAM_NAME" == "admin" ]]; then
     PERMISSION="admin"
@@ -147,12 +132,11 @@ for i in "${!TEAM_NAMES[@]}"; do
 
   # Loop through repositories and add them to the team with the appropriate permission
   for REPO in "${REPOSITORIES[@]}"; do
-    FULL_REPO_NAME="$ORGANIZATION/$REPO"
-    echo "Checking if repository $FULL_REPO_NAME exists..."
-    if [[ $(repo_exists "$FULL_REPO_NAME") == "true" ]]; then
-      add_repo_to_team "$TEAM_SLUG" "$FULL_REPO_NAME" "$PERMISSION"
+    echo "Checking if repository $REPO exists..."
+    if [[ $(repo_exists "$REPO") == "true" ]]; then
+      add_repo_to_team "$TEAM_SLUG" "$REPO" "$PERMISSION"
     else
-      echo "Repository $FULL_REPO_NAME does not exist."
+      echo "Repository $REPO does not exist."
       exit 1
     fi
   done
