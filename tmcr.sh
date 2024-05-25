@@ -1,10 +1,10 @@
 #!/bin/bash
 
 # Set your GitHub organization name
-ORGANIZATION="YourOrganization"
+ORGANIZATION="RafiCisco"
 
 # Set your GitHub token with appropriate permissions
-GITHUB_TOKEN="YourGitHubToken"
+GITHUB_TOKEN="${GITHUB_TOKEN}"
 
 # Specify the main repository name
 MAIN_REPOSITORY="projA"
