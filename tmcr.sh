@@ -16,7 +16,7 @@ MAIN_REPOSITORY="projA"
 SUB_REPOSITORIES=("rp1" "rp2" )
 
 # Specify the teams and their corresponding permissions
-TEAMS=(
+declare -A TEAMS=(
   ["admin"]="admin"
   ["dev"]="push"
 )
