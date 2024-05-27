@@ -12,7 +12,7 @@ GITHUB_TOKEN="${GITHUB_TOKEN}"
 TEAM_NAMES=("admin" "dev")
 TEAM_DESCRIPTIONS=("Admin team with full access" "Development team with write access")
 TEAM_PRIVACY="closed"  # or "secret"
-REPOSITORIES=("projA")  # Full names of repositories under projA
+REPOSITORIES=("rp1 rp2 rp3 rp4 rp5")  # Full names of repositories under projA
 
 # Function to check if a team exists
 team_exists() {
@@ -135,8 +135,8 @@ for i in "${!TEAM_NAMES[@]}"; do
     TEAM_SLUG=$(get_team_slug "$TEAM_ID")
   fi
 
-  echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
-  get_team_details "$TEAM_SLUG"
+ # echo "Fetching details for team '$TEAM_NAME' with slug '$TEAM_SLUG'..."
+  #get_team_details "$TEAM_SLUG"
 
   # Determine the permission level
   if [[ "$TEAM_NAME" == "admin" ]]; then
