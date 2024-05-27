@@ -21,7 +21,6 @@ done <<< "$sub_repos"
 
 # Main script starts here
 
-
 # GitHub Organization name
 ORGANIZATION="RafiCisco"
 
@@ -87,28 +86,32 @@ assign_team_to_repo() {
   fi
 }
 
-# Check if admin team exists
-ADMIN_TEAM_ID=$(team_exists "admin")
-if [[ "$ADMIN_TEAM_ID" == "false" ]]; then
-  echo "Admin team does not exist. Creating..."
-  ADMIN_TEAM_ID=$(create_team "admin" "Admin team with admin access" "closed")
-  echo "Admin team created with ID: $ADMIN_TEAM_ID"
-else
-  echo "Admin team already exists with ID: $ADMIN_TEAM_ID"
-fi
+# Read JSON file and assign teams to main repository
+read_json_and_assign_teams() {
+  local json_file=$1
 
-# Check if dev team exists
-DEV_TEAM_ID=$(team_exists "dev")
-if [[ "$DEV_TEAM_ID" == "false" ]]; then
-  echo "Dev team does not exist. Creating..."
-  DEV_TEAM_ID=$(create_team "dev" "Development team with write access" "closed")
-  echo "Dev team created with ID: $DEV_TEAM_ID"
-else
-  echo "Dev team already exists with ID: $DEV_TEAM_ID"
-fi
+  # Extract project name and sub-repositories
+  project_name=$(jq -r '.projA.name' "$json_file")
+  sub_repos=$(jq -c '.projA.sub_repos[]' "$json_file")
 
-# Assign teams to main repository
-main_repo="ProjA"
-echo "Assigning teams to main repository: $main_repo"
-assign_team_to_repo "$ADMIN_TEAM_ID" "$main_repo" "admin"
-assign_team_to_repo "$DEV_TEAM_ID" "$main_repo" "push"
+  echo "Project: $project_name"
+
+  # Assign teams to main repository
+  main_repo="projA"
+  echo "Assigning teams to main repository: $main_repo"
+  for team_name in "admin" "dev"; do
+    team_id=$(team_exists "$team_name")
+    if [[ "$team_id" == "false" ]]; then
+      echo "$team_name team does not exist. Creating..."
+      team_id=$(create_team "$team_name" "$team_name team with appropriate access" "closed")
+      echo "$team_name team created with ID: $team_id"
+    else
+      echo "$team_name team already exists with ID: $team_id"
+    fi
+
+    assign_team_to_repo "$team_id" "$main_repo" "push"
+  done
+}
+
+# Read JSON file and assign teams to main repository
+read_json_and_assign_teams "repos.json"
