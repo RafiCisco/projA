@@ -1,31 +1,31 @@
 {
-  "ProjA": {
-    "name": "ProjA",
+  "projA": {
+    "name": "projA",
     "sub_repos": [
       {
-        "name": "ProjA/rp1",
-        "description": "Sub-repo rp1 of ProjA",
-        "url": "https://github.com/RafiCisco/ProjA/tree/brpB/rp1"
+        "name": "projA/rp1",
+        "description": "Sub-repo rp1 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp1"
       },
       {
-        "name": "ProjA/rp2",
-        "description": "Sub-repo rp2 of ProjA",
-        "url": "https://github.com/RafiCisco/ProjA/tree/brpB/rp2"
+        "name": "projA/rp2",
+        "description": "Sub-repo rp2 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp2"
       },
       {
-        "name": "ProjA/rp3",
-        "description": "Sub-repo rp3 of ProjA",
-        "url": "https://github.com/RafiCisco/ProjA/tree/brpB/rp3"
+        "name": "projA/rp3",
+        "description": "Sub-repo rp3 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp3"
       },
       {
-        "name": "ProjA/rp4",
-        "description": "Sub-repo rp4 of ProjA",
-        "url": "https://github.com/RafiCisco/ProjA/tree/brpB/rp4"
+        "name": "projA/rp4",
+        "description": "Sub-repo rp4 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp4"
       },
       {
-        "name": "ProjA/rp5",
-        "description": "Sub-repo rp5 of ProjA",
-        "url": "https://github.com/RafiCisco/ProjA/tree/brpB/rp5"
+        "name": "projA/rp5",
+        "description": "Sub-repo rp5 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp5"
       }
     ]
   }
