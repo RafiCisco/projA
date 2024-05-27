@@ -82,35 +82,3 @@ echo "$repositories" | jq -r '.[].full_name'
 
 
 
-#Display with repositories with branches
-# GitHub Organization name
-ORGANIZATION="RafiCisco"
-
-# GitHub Token with appropriate permissions
-GITHUB_TOKEN="${GITHUB_TOKEN}"
-
-# Function to fetch all repositories in the organization
-fetch_repositories() {
-  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/orgs/$ORGANIZATION/repos?per_page=100")
-
-  echo "$response"
-}
-
-# Function to fetch branches for a repository
-fetch_branches() {
-  local repo_name=$1
-  local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-    "https://api.github.com/repos/$ORGANIZATION/$repo_name/branches")
-
-  echo "$response"
-}
-
-# Call the function to fetch repositories
-repositories=$(fetch_repositories)
-
-# Display repositories along with their branches
-echo "Repositories in $ORGANIZATION organization:"
-echo "$repositories" | jq -r '.[] | .full_name as $repo_name | "Repository: \($repo_name)"'
-echo "$repositories" | jq -r '.[] | .full_name as $repo_name | "Branches: \($repo_name)"'
-echo "$repositories" | jq -r '.[] | .full_name as $repo_name | " " + ($repo_name) + ":" + ((fetch_branches($repo_name) | length) | tostring)'
