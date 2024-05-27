@@ -8,6 +8,9 @@ ORGANIZATION="RafiCisco"
 # GitHub Token with appropriate permissions
 GITHUB_TOKEN="${GITHUB_TOKEN}"
 
+# JSON file containing repository details
+JSON_FILE="repos.json"
+
 # Function to check if a team exists
 team_exists() {
   local team_name=$1
@@ -17,7 +20,7 @@ team_exists() {
 
   local team_id=$(echo "$response" | jq -r ".[] | select(.name == \"$team_name\") | .id")
 
-  if [[ -n "$team_id" ]]; then
+  if [[ -n "$team_id" && "$team_id" != "null" ]]; then
     echo "$team_id"
   else
     echo "false"
@@ -111,4 +114,4 @@ else
 fi
 
 # Read JSON file and assign teams to repositories
-read_json_and_assign_teams "repos.json"
+read_json_and_assign_teams "$JSON_FILE"
