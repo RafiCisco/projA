@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#Defining projects manually and creating teams assigning
 # Define your GitHub organization name
 ORG_NAME="RafiCisco"
 
