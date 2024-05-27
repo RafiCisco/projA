@@ -113,5 +113,4 @@ repositories=$(fetch_repositories)
 echo "Repositories in $ORGANIZATION organization:"
 echo "$repositories" | jq -r '.[] | .full_name as $repo_name | "Repository: \($repo_name)"'
 echo "$repositories" | jq -r '.[] | .full_name as $repo_name | "Branches: \($repo_name)"'
-echo "$repositories" | jq -r '.[] | .full_name as $repo_name | " " + ($repo_name) + ":" + ((fetch_branches($repo_name)) | length | tostring)'
-
+echo "$repositories" | jq -r '.[] | .full_name as $repo_name | " " + ($repo_name) + ":" + ((fetch_branches($repo_name) | length) | tostring)'
