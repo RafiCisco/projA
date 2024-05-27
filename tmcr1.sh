@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Define your GitHub organization name
-ORG_NAME="your_organization_name"
+ORG_NAME="RafiCisco"
 
 # Define your GitHub access token
-ACCESS_TOKEN="your_access_token"
+ACCESS_TOKEN="${GITHUB_TOKEN}"
 
 # Define your projects and repositories
-PROJECTS=("projA" "projB")
-REPOS=("rp1" "rp2" "rp3" "rp4" "rp5" "rb1" "rb2" "rb3" "rb4" "rb5")
+PROJECTS=("projA")
+REPOS=("rp1" "rp2" "rp3" "rp4" "rp5")
 
 # Loop through projects
 for PROJECT in "${PROJECTS[@]}"; do
