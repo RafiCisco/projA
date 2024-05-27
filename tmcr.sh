@@ -68,25 +68,24 @@ create_team() {
 
 # Function to assign team to repository
 assign_team_to_repo() {
-  local team_slug=$1
+  local team_id=$1
   local repo_name=$2
-  local permission=$3
 
   local response=$(curl -s -o /dev/null -w "%{http_code}" -X PUT \
     -H "Authorization: token $GITHUB_TOKEN" \
     -H "Content-Type: application/json" \
-    -d "{\"permission\": \"$permission\"}" \
-    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_slug/repos/$ORGANIZATION/$repo_name")
+    -d "{\"permission\": \"push\"}" \
+    "https://api.github.com/orgs/$ORGANIZATION/teams/$team_id/repos/$ORGANIZATION/$repo_name")
 
-  if [[ "$response" -eq 204 ]]; then
-    echo "Assigned team $team_slug to repo $repo_name with $permission permission"
-  else
-    echo "Error assigning team $team_slug to repo $repo_name: HTTP status code $response"
+  if [[ "$response" -ne 204 ]]; then
+    echo "Error assigning team $team_id to repo $repo_name: HTTP status code $response"
     exit 1
+  else
+    echo "Assigned team $team_id to repo $repo_name"
   fi
 }
 
-# Read JSON file and assign teams to main repository
+# Read JSON file and assign teams to repository
 read_json_and_assign_teams() {
   local json_file=$1
 
@@ -96,22 +95,41 @@ read_json_and_assign_teams() {
 
   echo "Project: $project_name"
 
-  # Assign teams to main repository
-  main_repo="projA"
-  echo "Assigning teams to main repository: $main_repo"
-  for team_name in "admin" "dev"; do
-    team_id=$(team_exists "$team_name")
-    if [[ "$team_id" == "false" ]]; then
-      echo "$team_name team does not exist. Creating..."
-      team_id=$(create_team "$team_name" "$team_name team with appropriate access" "closed")
-      echo "$team_name team created with ID: $team_id"
-    else
-      echo "$team_name team already exists with ID: $team_id"
-    fi
+  # Check if admin team exists
+  ADMIN_TEAM_ID=$(team_exists "admin")
+  if [[ "$ADMIN_TEAM_ID" == "false" ]]; then
+    echo "Admin team does not exist. Creating..."
+    ADMIN_TEAM_ID=$(create_team "admin" "Admin team with full access" "closed")
+    echo "Admin team created with ID: $ADMIN_TEAM_ID"
+  else
+    echo "Admin team already exists with ID: $ADMIN_TEAM_ID"
+  fi
 
-    assign_team_to_repo "$team_id" "$main_repo" "push"
-  done
+  # Check if dev team exists
+  DEV_TEAM_ID=$(team_exists "dev")
+  if [[ "$DEV_TEAM_ID" == "false" ]]; then
+    echo "Dev team does not exist. Creating..."
+    DEV_TEAM_ID=$(create_team "dev" "Development team with write access" "closed")
+    echo "Dev team created with ID: $DEV_TEAM_ID"
+  else
+    echo "Dev team already exists with ID: $DEV_TEAM_ID"
+  fi
+
+  while IFS= read -r sub_repo; do
+    repo_name=$(echo "$sub_repo" | jq -r '.name')
+
+    # Assign teams to repository
+    assign_team_to_repo "$ADMIN_TEAM_ID" "$repo_name"
+    assign_team_to_repo "$DEV_TEAM_ID" "$repo_name"
+  done <<< "$sub_repos"
 }
 
-# Read JSON file and assign teams to main repository
-read_json_and_assign_teams "repos.json"
+# Check if JSON file exists
+json_file="repos.json"
+if [[ ! -f "$json_file" ]]; then
+  echo "Error: JSON file $json_file not found"
+  exit 1
+fi
+
+# Read JSON file and assign teams to repositories
+read_json_and_assign_teams "$json_file"
