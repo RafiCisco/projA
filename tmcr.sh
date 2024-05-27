@@ -21,6 +21,8 @@ done <<< "$sub_repos"
 
 # Main script starts here
 
+#!/bin/bash
+
 # GitHub Organization name
 ORGANIZATION="RafiCisco"
 
@@ -106,9 +108,6 @@ else
   echo "Dev team already exists with ID: $DEV_TEAM_ID"
 fi
 
-# Assign teams to repositories
-repositories=("ProjA/rp1" "ProjA/rp2" "ProjA/rp3" "ProjA/rp4" "ProjA/rp5")
-for repo in "${repositories[@]}"; do
-  assign_team_to_repo "$ADMIN_TEAM_ID" "$repo" "admin"
-  assign_team_to_repo "$DEV_TEAM_ID" "$repo" "push"
-done
+# Assign teams to main repository ProjA
+assign_team_to_repo "$ADMIN_TEAM_ID" "ProjA" "admin"
+assign_team_to_repo "$DEV_TEAM_ID" "ProjA" "push"
