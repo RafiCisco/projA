@@ -5,13 +5,28 @@
       {
         "name": "rp1",
         "description": "Sub-repo rp1 of projA",
-        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp1"
+        "url": "https://github.com/RafiCisco/projA/tree/brpA/rp1"
       },
       {
         "name": "rp2",
         "description": "Sub-repo RP2 of projA",
-        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp2"
-      }
+        "url": "https://github.com/RafiCisco/projA/tree/brpA/rp2"
+      },
+      {
+        "name": "rp3",
+        "description": "Sub-repo RP3 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp3"
+      },
+      {
+        "name": "rp4",
+        "description": "Sub-repo RP4 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp4"
+      },
+      {
+        "name": "rp5",
+        "description": "Sub-repo RP5 of projA",
+        "url": "https://github.com/RafiCisco/projA/tree/brpB/rp5"
+      }   
     ]
   }
 }
