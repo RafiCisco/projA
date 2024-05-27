@@ -10,9 +10,11 @@ jobs:
       uses: actions/checkout@v4
 
     - name: script execute permission
-      run:  chmod +x tmcr.sh
+      #run:  chmod +x tmcr.sh
+      run:  chmod +x tmcr1.sh
 
     - name: Run Create Teams Script
       env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: bash tmcr.sh
+      #run: bash tmcr.sh
+      run: bash tmcr1.sh
