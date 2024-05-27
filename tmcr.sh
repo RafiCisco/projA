@@ -19,7 +19,7 @@ while IFS= read -r sub_repo; do
     echo
 done <<< "$sub_repos"
 
-# Main script starts here
+# Main script starts here projA to check exist or not
 
 #!/bin/bash
 
