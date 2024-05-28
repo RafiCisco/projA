@@ -14,6 +14,18 @@ README.md @Rafi98
 # Assign all files in the repository to both Admin and Dev teams
 * @RafiCisco/admin
 
+
+
+# Admin team for rp1 to rp3
+rp1/ @RafiCisco/admin
+rp2/ @RafiCisco/admin
+rp3/ @RafiCisco/admin
+
+# Dev team for rp4 and rp5
+rp4/ @RafiCisco/dev
+rp5/ @RafiCisco/dev
+
+
 # Code owners for a specific directory
 #/docs/ @RafiCisco/projecta_admin
 
