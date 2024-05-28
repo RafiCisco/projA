@@ -1,0 +1,67 @@
+# Example: Define code owners
+# Each line in the file is a pattern followed by one or more owners
+# Owners can be individual GitHub usernames or team names within an organization
+
+# Code owners for the entire repository
+#* @global-owner1 @global-owner2
+* @Rafi98 
+
+
+
+# Individual file owner
+#README.md @Rafi98
+
+# Assign all files in the repository to both Admin and Dev teams
+#* @RafiCisco/admin
+
+
+
+# Admin team for rp1 to rp3
+rp1/ @RafiCisco/admin
+rp2/ @RafiCisco/admin
+rp3/ @RafiCisco/admin
+
+# Dev team for rp4 and rp5
+rp4/ @RafiCisco/dev
+rp5/ @RafiCisco/dev
+
+
+# Code owners for a specific directory
+#/docs/ @RafiCisco/projecta_admin
+
+# Code owners for specific files
+#/src/main.js @js-owner
+
+
+# Code owners for all JavaScript files in a directory
+#/src/*.js @js-team
+
+# Code owners for everything in a subdirectory
+#/config/ @config-owner
+
+# Code owners for all files with a specific extension
+#*.md @markdown-owner
+
+# Code owners for a specific file type in a specific directory
+#/docs/*.md @docs-team
+
+
+
+
+# This is a sample CODEOWNERS file
+
+# All files in the repository
+#* @global-owner1 @global-owner2
+#* @RafiCisco/projecta_admin 
+
+# Specific directories
+#/docs/ @docs-team
+#/src/ @dev-team
+
+
+# Specific files
+#/src/index.js @frontend-dev
+#/config/database.yml @backend-dev
+
+# File types
+#*.md @doc-team
